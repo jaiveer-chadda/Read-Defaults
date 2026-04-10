@@ -21,36 +21,48 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
   # immediately replace all the escape chars with a delimiter
   #  they'll seriously mess things up later if I dont
-  defaults_raw="${defaults_raw//\\033/>$delim<}"
+  defaults_raw="${defaults_raw//\\033/$delim}"
 
-  # autoload -Uz regexp-replace
-  setopt rematch_pcre
+  # ———————————————————————————————————————————————————————————————————————— #
 
   local -A defaults_parsed
   
   local -i 10 is_reading=0
   local line bundle_id inner_lines
 
+  # autoload -Uz regexp-replace
+  setopt rematch_pcre
+  setopt extended_glob
+
   for line in "${(@f)defaults_raw}"; {
     
     # start of key list
-    if [[ "$line" =~ "^Found 1 keys in domain '([^']+)'" ]] {
+    if (( ! is_reading )) \
+     && [[ "$line" =~ "^Found 1 keys in domain '([^']+)'" ]] {
       bundle_id="${match[1]}"
-      # reset the inner content
-      inner_lines=
+      inner_lines=  # reset the inner lines
       is_reading=1
       continue
     }
 
     # end of list
-    if [[ $is_reading && "$line" == '}' ]] {
+    if (( is_reading )) && [[ "$line" == '}' ]] {
+      # push the contents into the output array
       defaults_parsed[$bundle_id]="$inner_lines"
       is_reading=0
       continue
     }
 
+    # if it doesn't start with a quote, it's irrelevant to us
+    if (( is_reading )) && [[ ! "$line" =~ '^\s+"' ]] continue
+
+    # everything else that hasn't been matched before is a keybinding entry
+    #  replace the leading spaces, the leading ", and the trailing semicolon
+    inner_lines+="${${line/# ##\"}/%;}\n"
   }
 
-  # echo "$defaults_raw"
-  echo "${(@kj:\n:)defaults_parsed}"
+  # ———————————————————————————————————————————————————————————————————————— #
+
+  echo "${(@kvj:\n:)defaults_parsed}"
+
 }
