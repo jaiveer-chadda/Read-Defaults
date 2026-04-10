@@ -10,6 +10,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   local -r _defaults_key='NSUserKeyEquivalents'
 
   local -ri 10 delim=$RANDOM
+  local -r _sep=' -> '
 
   local defaults_raw
 
@@ -57,8 +58,13 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     if (( is_reading )) && [[ ! "$line" =~ '^\s+"' ]] continue
 
     # everything else that hasn't been matched before is a keybinding entry
-    #  replace the leading spaces, the leading ", and the trailing semicolon
-    inner_lines+="${${line/# ##\"}/%;}\n"
+    line="${line/# ##\"}"        # strip the leading spaces and quote
+    line="${line/%;}"            # remove the trailing semicolon
+
+    line="${line/#$delim}"       # strip the leading delimiter, if it exists
+    line="${line//$delim/$_sep}" # replace the other delimiters with arrows
+
+    inner_lines+="$line\n"       # add a newline to keep them all separated
   }
 
   # ———————————————————————————————————————————————————————————————————————— #
