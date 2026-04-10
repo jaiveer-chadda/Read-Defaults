@@ -1,0 +1,94 @@
+Found 1 keys in domain 'com.apple.Preview': {
+    NSUserKeyEquivalents =     {
+        "\033File\033Export..." = "@$e";
+    };
+}
+Found 1 keys in domain 'com.iconfactory.Tot': {
+    NSUserKeyEquivalents =     {
+        "\033Edit\033Spelling and Grammar\033Check Document Now" = "@^$\\Uf716";
+        "\033Format\033Switch to Plain Text" = "@~c";
+        "\033Format\033Switch to Rich Text" = "@~c";
+    };
+}
+Found 1 keys in domain 'com.microsoft.VSCode': {
+    NSUserKeyEquivalents =     {
+        "\033Edit\033Toggle Block Comment" = "@$/";
+        "\033Window\033Minimize" = "@~$m";
+    };
+}
+Found 1 keys in domain 'com.apple.finder': {
+    NSUserKeyEquivalents =     {
+        "\033File\033Open With\033Other..." = "@$o";
+        "\033File\033Rename..." = "@~r";
+        "\033Go\033Documents" = "@~^d";
+        "\033Go\033Go to Folder..." = "@g";
+        "\033Go\033Home" = "@~^$\\Uf715";
+    };
+}
+Found 1 keys in domain 'com.apple.reminders': {
+    NSUserKeyEquivalents =     {
+        "\033Edit\033Flag" = "~f";
+        "\033Edit\033Mark Deadline As\033None" = "@r";
+        "\033Edit\033Mark as Completed" = "@d";
+        "\033Edit\033Mark as Incomplete" = "@d";
+        "\033Edit\033Unflag" = "~f";
+        "\033View\033Hide Completed" = "@~c";
+        "\033View\033Show Completed" = "@~c";
+    };
+}
+Found 1 keys in domain 'Apple Global Domain': {
+    NSUserKeyEquivalents =     {
+        "\033Window\033Minimise" = "@m";
+        "\033Window\033Minimize" = "@m";
+        "Hide Others" = "@^$\\Uf70e";
+        "Show All" = "@^$\\Uf70d";
+    };
+}
+Found 1 keys in domain 'com.spotify.client': {
+    NSUserKeyEquivalents =     {
+        "\033View\033Go Back" = "@[";
+        "\033View\033Go Forward" = "@]";
+    };
+}
+Found 1 keys in domain 'com.googlecode.iterm2': {
+    NSUserKeyEquivalents =     {
+        "\033Session\033Restart Session" = "@p";
+    };
+}
+Found 1 keys in domain 'com.apple.Photos': {
+    NSUserKeyEquivalents =     {
+        "\033View\033Collections" = "^3";
+        "\033View\033Library" = "^2";
+        "\033View\033Pinned\033Favourites" = "^0";
+    };
+}
+Found 1 keys in domain 'com.google.Chrome': {
+    NSUserKeyEquivalents =     {
+        "\033Edit\033Find\033Find..." = "@f";
+        "\033File\033New tab" = "@~t";
+        "\033File\033Save Page As..." = "@$s";
+        "\033Tab\033Close Tabs to the Right" = "@~r";
+        "\033Tab\033Close other tabs" = "@~w";
+        "\033Tab\033Duplicate tab" = "^d";
+        "\033Tab\033Group Tab" = "@g";
+        "\033Tab\033Move Tab to New Window" = "^n";
+        "\033Tab\033New Tab to the Right" = "@t";
+        "\033View\033Stop" = "@~.";
+        "\033Window\033Extensions" = "@$e";
+    };
+}
+Found 1 keys in domain 'com.houdah.CustomShortcuts': {
+    NSUserKeyEquivalents =     {
+        "\033Edit\033Delete" = "@\\U232b";
+    };
+}
+Found 1 keys in domain 'com.apple.TextEdit': {
+    NSUserKeyEquivalents =     {
+        "\033Edit\033Find\033Find and Replace..." = "@r";
+    };
+}
+Found 1 keys in domain 'com.apple.iCal': {
+    NSUserKeyEquivalents =     {
+        "\033View\033Show Completed Reminders" = "@~c";
+    };
+}
