@@ -65,6 +65,7 @@ Found 1 keys in domain 'com.apple.Photos': {
 Found 1 keys in domain 'com.google.Chrome': {
     NSUserKeyEquivalents =     {
         "\033Edit\033Find\033Find..." = "@f";
+        "\033Edit\033Writing Tools\033Create Key Points" = "@~\\Uf713";
         "\033File\033New tab" = "@~t";
         "\033File\033Save Page As..." = "@$s";
         "\033Tab\033Close Tabs to the Right" = "@~r";
@@ -73,6 +74,7 @@ Found 1 keys in domain 'com.google.Chrome': {
         "\033Tab\033Group Tab" = "@g";
         "\033Tab\033Move Tab to New Window" = "^n";
         "\033Tab\033New Tab to the Right" = "@t";
+        "\033View\033Developer\033Developer Tools" = "~^\\Uf714";
         "\033View\033Stop" = "@~.";
         "\033Window\033Extensions" = "@$e";
     };
