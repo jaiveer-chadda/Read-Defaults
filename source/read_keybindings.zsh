@@ -10,7 +10,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   local -r  _bold=$'\e[1m'
   local -r   _dim=$'\e[2m'
 
-  local -r _dividing_line="\n$_dim${(r:$COLUMNS::─:)}$_reset"
+  local -r _dividing_line="$_dim${(r:$COLUMNS::─:)}$_reset"
 
   local -r _sep=' —→ '
   local -ri 10 _sep_len=${#_sep}
@@ -49,7 +49,6 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   setopt extended_glob  # for ${line/# ##...
 
   local line bundle_id inner_lines
-
   for line in "${(@f)defaults_raw}"; {
 
     # start of key list
@@ -83,39 +82,54 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   # ———————————————————————————————————————————————————————————————————————— #
 
   local -a all_lines segments
-  local -i 10 max_segments seg_diff
-  local raw_lines title command keybind
+  local -i 10 i num_segs diff column_idx
+  local raw_lines header command keybind # bundle_id line
 
   for bundle_id raw_lines in "${(@kv)defaults_parsed}"; {
-      [[ "$bundle_id" != 'com.google.Chrome' ]] && continue
+    [[ "$bundle_id" != 'com.google.Chrome' ]] && continue
 
-      #         replace all of the bundle id's chars with an overline ↓
-      title="$_dividing_line\n$_bold$bundle_id$_reset\n${bundle_id//?/‾}"
+    header="\n$_dividing_line"
+    header+="\n$_bold$bundle_id$_reset"
+    # replace all of the bundle id's chars with overlines
+    header+="\n${bundle_id//?/‾}"
 
-      all_lines=( "${(@f)raw_lines}" )
-      max_segments=-1
+    # split the input by newline, creating an array
+    all_lines=( "${(@f)raw_lines}" )
+    num_segs=0
 
-      for line in "${(@)all_lines}"; {
-        segments=( "${(ps:$_sep:)line}" )
-        seg_diff=$(( $#segments - max_segments ))
-        if (( seg_diff > 0 )) {
-          # seg_diff
-          max_segments=${#segments}
-        }
-      }
+    # iterate through each line
+    for line in "${(@)all_lines}"; {
+      # and split them at every $_sep, creating yet more arrays
+      segments=( "${(ps:$_sep:)line}" )
 
-      echo "$title"
-      # echo $max_segments
+      # then find the length of the newly-created array
+      #  and find how much it differs from how many segments we already had
+      diff=$(( $#segments - num_segs ))
 
-      for line in "${(@)all_lines}"; {
-        command="${line/%$_cmd_sep_pattern*}"
-        keybind="${line/#*$_cmd_sep_pattern}"
+      # if it's smaller than the previous max size, we don't care about it
+      if (( diff <= 0 )) continue
 
-        echo "${(r:45:: :)command} =⇒ $keybind"
-      }
+      # then, for every new segment that was created, make a new array
+      eval 'local -a' __col_{$(( num_segs + 1 ))..$(( num_segs + diff ))}'=()'
 
+      # finally, adjust the value of num_segs
+      num_segs=${#segments}
+    }
+
+    for i in {1..$num_segs}; {
+      local -p "__col_$i"
+    }
+
+    echo "$header"
+    # echo $num_segs
+
+    for line in "${(@)all_lines}"; {
+      command="${line/%$_cmd_sep_pattern*}"
+      keybind="${line/#*$_cmd_sep_pattern}"
+
+      echo "${(r:45:: :)command} =⇒ $keybind"
+    }
   }
 
   echo $_dividing_line
-
 }
