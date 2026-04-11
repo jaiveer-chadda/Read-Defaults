@@ -164,8 +164,8 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     # print the separator line and domain_bid/title
     #  with an underline of the same length as the domain_bid
     # (this type of underline looks better than doing `\e[4m` imo)
-    domain_bid="$_bold$domain_bid$_reset"
     bid_underline="${(r:$#domain_bid::‾:)}"
+    domain_bid="$_bold$domain_bid$_reset"
 
     # replace all the delimiters with separator arrows
     #  (this will probably be changed once the column system is implemented)
