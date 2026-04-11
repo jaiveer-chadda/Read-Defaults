@@ -8,26 +8,37 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
   # — Constants —————————————————————————————————————————————————————————— #
 
+  # General / Util Strings
+  local -r NL=$'\n'
+
+  # Graphical ANSI Esc Codes
   local -r _reset=$'\e[0m'
   local -r  _bold=$'\e[1m'
   local -r   _dim=$'\e[2m'
 
-  local -r _dividing_line="$_dim${(r:$COLUMNS::─:)}$_reset"
+  # Formating / Visual Literals
+  local -r _command_sep=' —→ '  # — em-dash   → right arrow
+  local -r _keybind_sep=' =⇒ '  # = equals    ⇒ right double arrow
+  local -r _underline_char='‾'  # ‾ overline
+  local -r _divider_char='─'    # ─ hor. box drawing char
 
-  local -r _sep=' —→ '
-  local -ri 10 _sep_len=${#_sep}
+  local -r _dividing_line="$_dim${(pr:$COLUMNS::$_divider_char:)}$_reset"
+  
+  # Delimiters / Arbitrary Separators
   local -ri 10 delim=$RANDOM  # just an arbitrary number
-
-  local -ri 2 _load_from_cache=1  # might make this a flag at some point
-  local -r _cache_file='../cache/latest.txt'
-  local -r _defaults_key='NSUserKeyEquivalents'
-
+  
+  # Parsing & `domains` Patterns
   local -r _list_start_pattern="^Found 1 keys in domain '([^']+)'"
-  local -r _keybinding_line_pattern='^\s+"'
+  local -r _list_content_pattern='^\s+"'
   local -r _list_end_pattern='}'
-
   local -r _cmd_sep_pattern='" = "'
 
+  # Data Loading & Caching
+  local -r _defaults_key='NSUserKeyEquivalents'
+  local -r _cache_file='../cache/latest.txt'
+  local -ri 2 _load_from_cache=1  # might make this a flag at some point
+
+  # ———————————————————————————————————————————————————————————————————————— #
   # — Read the Raw Data ———————————————————————————————————————————————————— #
   #    - (and do a tiny bit of cleanup)
 
@@ -54,8 +65,8 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   # — Read & Sort Keybinding Entries ——————————————————————————————————————— #
 
   # autoload -Uz regexp-replace  # might need this later
-  setopt rematch_pcre   # for ${match[1]}
-  setopt extended_glob  # for ${line/# ##...
+  setopt rematch_pcre   # used for: `${match[1]}`
+  setopt extended_glob  # used for: `${line/# ##...`
 
   local -A defaults_parsed
   local line domain_bid inner_lines
@@ -74,13 +85,13 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     if [[ "$line" == "$_list_end_pattern" ]] {
       # push the contents to the output array
       #  and strip the _final_ newline, which is added by us when
-      #  we do `inner_lines+=...$'\n'`
-      defaults_parsed[$domain_bid]="${inner_lines/%$'\n'}"
+      #  we do `inner_lines+=...$NL`
+      defaults_parsed[$domain_bid]="${inner_lines/%$NL}"
       continue  # nothing else of interest on this line; continue
     }
 
     # if it doesn't start with a quote, it's not of interest to us
-    if [[ ! "$line" =~ "${~_keybinding_line_pattern}" ]] continue
+    if [[ ! "$line" =~ "${~_list_content_pattern}" ]] continue
 
     # any line that remains is a keybinding entry line
 
@@ -92,7 +103,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     line="${line/%\";}"     # remove the trailing semicolon and quote
     line="${line/#$delim}"  # strip the leading delimiter (if it exists)
 
-    inner_lines+="$line"$'\n'  # add a newline to keep them all separated
+    inner_lines+="$line$NL" # add a newline to keep them all separated
     # Note: the last newline of the block will be stripped when pushing it to
     #  the output array
   }
@@ -114,7 +125,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     #  to avoid having to loop over the lines multiple times
     # Essentially:
     #  - for each line, create an array of segments
-    #    - (segments being some text between $_sep)
+    #    - (segments being some text between $_command_sep)
     #  - find out how many segments are on this line
     #    - if the number of segments on this line > the number of segments
     #      we already have, create new arrays for each of those new segments
@@ -128,7 +139,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     num_segs=0
 
     for line in "${(@)all_lines}"; {
-      # for each line, split the segments at every $_sep
+      # for each line, split the segments at each delimiter
       segments=( "${(ps:$delim:)line}" )
 
       # then find the length of the newly-created array
@@ -164,12 +175,12 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     # print the separator line and domain_bid/title
     #  with an underline of the same length as the domain_bid
     # (this type of underline looks better than doing `\e[4m` imo)
-    bid_underline="${(r:$#domain_bid::‾:)}"
+    bid_underline="${(pr:$#domain_bid::$_underline_char:)}"
     domain_bid="$_bold$domain_bid$_reset"
 
-    # replace all the delimiters with separator arrows
-    #  (this will probably be changed once the column system is implemented)
-    all_lines=( "${(@)all_lines//$delim/$_sep}" )
+    # finally, replace all the delimiters with separator arrows
+    #  (tho this will probably be changed once I make the column system)
+    all_lines=( "${(@)all_lines//$delim/$_command_sep}" )
 
     # ——————————————————————————————————————————————————————————————————— #
     # ——— Print Output —————————————————————————————————————————————————— #
@@ -183,7 +194,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
       # 45 is just an arbitrary number for now
       #  - I need to calculate it at some point, but for now, it's big enough
       #    that none of the commands will be truncated when printing
-      echo "${(r:50:: :)command} =⇒ $keybind"
+      echo "${(r:52:: :)command}$_keybind_sep$keybind"
     }
   }
 

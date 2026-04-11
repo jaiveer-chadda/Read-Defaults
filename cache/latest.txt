@@ -72,7 +72,7 @@ Found 1 keys in domain 'com.google.Chrome': {
         "\033Tab\033Group Tab" = "@g";
         "\033Tab\033Move Tab to New Window" = "^n";
         "\033Tab\033New Tab to the Right" = "@t";
-        "\033View\033Developer\033Developer Tools" = "~^\024";
+        "\033View\033Developer\033Developer Tools" = "~^$9";
         "\033View\033Stop" = "@~.";
         "\033Window\033Extensions" = "@$e";
     };
