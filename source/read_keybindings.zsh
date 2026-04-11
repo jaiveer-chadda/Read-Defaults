@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 # if __name__ != "__main__": quit()
-#  i.e., if we're being sourced, exit
+#  i.e.: if we're being sourced (not run directly), then exit
 if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
 () {
@@ -50,21 +50,21 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   #   use `echo -E ...`
   defaults_raw="${defaults_raw//\\033/$delim}"
 
+  # ———————————————————————————————————————————————————————————————————————— #
   # — Read & Sort Keybinding Entries ——————————————————————————————————————— #
-
 
   # autoload -Uz regexp-replace  # might need this later
   setopt rematch_pcre   # for ${match[1]}
   setopt extended_glob  # for ${line/# ##...
 
   local -A defaults_parsed
-  local line bundle_id inner_lines
+  local line domain_bid inner_lines
 
   for line in "${(@f)defaults_raw}"; {
 
     # start of key list
     if [[ "$line" =~ "${~_list_start_pattern}" ]] {
-      bundle_id="${match[1]}"
+      domain_bid="${match[1]}"
       # reset the inner lines at each iteration
       inner_lines=
       continue  # nothing else of interest on this line; continue
@@ -75,40 +75,40 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
       # push the contents to the output array
       #  and strip the _final_ newline, which is added by us when
       #  we do `inner_lines+=...$'\n'`
-      defaults_parsed[$bundle_id]="${inner_lines/%$'\n'}"
+      defaults_parsed[$domain_bid]="${inner_lines/%$'\n'}"
       continue  # nothing else of interest on this line; continue
     }
 
     # if it doesn't start with a quote, it's not of interest to us
     if [[ ! "$line" =~ "${~_keybinding_line_pattern}" ]] continue
 
-    # everything else that hasn't been matched before
-    #  is a keybinding entry
-    line="${line/# ##\"}"        # strip the leading spaces and quote
-    line="${line/%\";}"          # remove the trailing semicolon and quote
+    # any line that remains is a keybinding entry line
 
-    # we're doing the leading delimiter stripping seperately to the spaces,
+    # Note: we're stripping the leading delimiter separately from the spaces,
     #  cos there are a few cases in which the command doesn't have any
     #  segments, in which case it won't have a leading delimiter
     # e.g. "Show All" (in domain 'Apple Global Domain')
-    line="${line/#$delim}"       # strip the leading delimiter (if it exists)
-    line="${line//$delim/$_sep}" # replace the other delimiters with arrows
+    line="${line/# ##\"}"   # strip the leading spaces and quote
+    line="${line/%\";}"     # remove the trailing semicolon and quote
+    line="${line/#$delim}"  # strip the leading delimiter (if it exists)
 
-    inner_lines+="$line"$'\n'    # add a newline to keep them all separated
+    inner_lines+="$line"$'\n'  # add a newline to keep them all separated
     # Note: the last newline of the block will be stripped when pushing it to
-    #  the output assoc. array ($defaults_parsed)
+    #  the output array
   }
 
-  # — Parse & Print the Data ——————————————————————————————————————————————— #
+  # ———————————————————————————————————————————————————————————————————————— #
+  # — Parse & Print Data ——————————————————————————————————————————————————— #
 
   local -a all_lines segments
   local -i 10 i num_segs diff column_idx  # reusing old var names ↓
-  local raw_lines header command keybind bid_underline # bundle_id line
+  local raw_lines header command keybind bid_underline # domain_bid line
 
-  for bundle_id raw_lines in "${(@kv)defaults_parsed}"; {
-    [[ "$bundle_id" != 'com.google.Chrome' ]] && continue  # for testing
+  for domain_bid raw_lines in "${(@kv)defaults_parsed}"; {
+    # ↓↓ debug line ↓↓
+    # [[ "$domain_bid" != 'com.google.Chrome' ]] && continue
 
-    # ——— Parse Keybindings & Make Columns —————————————————————————————— #
+    # ——— Create Columns ———————————————————————————————————————————————— #
 
     # Note: the reason I'm doing this section in such a convoluted way is
     #  to avoid having to loop over the lines multiple times
@@ -129,7 +129,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
     for line in "${(@)all_lines}"; {
       # for each line, split the segments at every $_sep
-      segments=( "${(ps:$_sep:)line}" )
+      segments=( "${(ps:$delim:)line}" )
 
       # then find the length of the newly-created array
       #  and find how much it differs from how many segments we already had
@@ -158,17 +158,23 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     #   local -p "__col_$i"
     # }
 
+    # ——————————————————————————————————————————————————————————————————— #
     # ——— Format Output ————————————————————————————————————————————————— #
 
-    # print the separator line and bundle_id/title
-    #  with an underline of the same length as the bundle_id
+    # print the separator line and domain_bid/title
+    #  with an underline of the same length as the domain_bid
     # (this type of underline looks better than doing `\e[4m` imo)
-    bundle_id="$_bold$bundle_id$_reset"
-    bid_underline="${(r:$#bundle_id::‾:)}"
+    domain_bid="$_bold$domain_bid$_reset"
+    bid_underline="${(r:$#domain_bid::‾:)}"
 
-    echo "$_dividing_line\n$bundle_id\n$bid_underline"
+    # replace all the delimiters with separator arrows
+    #  (this will probably be changed once the column system is implemented)
+    all_lines=( "${(@)all_lines//$delim/$_sep}" )
 
+    # ——————————————————————————————————————————————————————————————————— #
     # ——— Print Output —————————————————————————————————————————————————— #
+
+    echo "$_dividing_line\n$domain_bid\n$bid_underline"
 
     for line in "${(@)all_lines}"; {
       command="${line/%$_cmd_sep_pattern*}"
@@ -177,7 +183,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
       # 45 is just an arbitrary number for now
       #  - I need to calculate it at some point, but for now, it's big enough
       #    that none of the commands will be truncated when printing
-      echo "${(r:45:: :)command} =⇒ $keybind"
+      echo "${(r:50:: :)command} =⇒ $keybind"
     }
   }
 
