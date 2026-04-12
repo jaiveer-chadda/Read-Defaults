@@ -5,7 +5,7 @@
 if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
 () {
-
+  local PS4=$'%F{red}+ %N:%I%F{blue}\t>%f '
   # — Constants —————————————————————————————————————————————————————————— #
 
   # General / Util Strings
@@ -112,12 +112,12 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   # — Parse & Print Data ——————————————————————————————————————————————————— #
 
   local -a all_lines segments
-  local -i 10 i num_segs diff column_idx  # reusing old var names ↓
+  local -i 10 i num_segs diff column_idx    # reusing old var names ↓
   local raw_lines header command keybind bid_underline # domain_bid line
 
   for domain_bid raw_lines in "${(@kv)defaults_parsed}"; {
     # ↓↓ debug line ↓↓
-    # [[ "$domain_bid" != 'com.google.Chrome' ]] && continue
+    [[ "$domain_bid" != 'com.google.Chrome' ]] && continue
 
     # ——— Create Columns ———————————————————————————————————————————————— #
 
@@ -139,8 +139,12 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     num_segs=0
 
     for line in "${(@)all_lines}"; {
+      # firstly, split each line into the command and keybinding sections
+      command="${line/%$_cmd_sep_pattern*}"
+      keybind="${line/#*$_cmd_sep_pattern}"
+
       # for each line, split the segments at each delimiter
-      segments=( "${(ps:$delim:)line}" )
+      segments=( "${(ps:$delim:)command}" )
 
       # then find the length of the newly-created array
       #  and find how much it differs from how many segments we already had
@@ -148,26 +152,31 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
       # if it's smaller than the previous max size, we don't care about it
       #  (imo this is cleaner than creating an if block for the code below)
-      if (( diff <= 0 )) continue
+      if (( diff > 0 )) {
+        # then, for every new segment that was created, make a new array
+        #  - e.g., if num_segs=0, and diff=2, this line will run:
+        #    - local -a __col_1=() __col_2=()
+        #  - or if num_segs=2, and diff=1, it'll run:
+        #    - local -a __col_3=()
+        eval 'local -a' __col_{$(( num_segs + 1 ))..$(( num_segs + diff ))}'=()'
 
-      # then, for every new segment that was created, make a new array
-      #  - e.g., if num_segs=0, and diff=2, this line will run:
-      #    - local -a __col_1=() __col_2=()
-      #  - or if num_segs=2, and diff=1, it'll run:
-      #    - local -a __col_3=()
-      eval 'local -a' __col_{$(( num_segs + 1 ))..$(( num_segs + diff ))}'=()'
+        # finally, adjust the value of num_segs
+        #  - this is being done at the end, cos we still need to use the
+        #    old value of $num_segs in the eval line
+        num_segs=${#segments}
+      }
 
-      # finally, adjust the value of num_segs
-      #  - this is being done at the end, cos we still need to use the
-      #    old value of $num_segs in the eval line
-      num_segs=${#segments}
+      for i in {1.."${#segments}"}; {
+        eval "__col_$i+=( '${segments[$i]}' );"
+      }
+
     }
 
     # ——— Organise Columns —————————————————————————————————————————————— #
 
-    # for i in {1..$num_segs}; {
-    #   local -p "__col_$i"
-    # }
+    for i in {1..$num_segs}; {
+      local -p "__col_$i"
+    }
 
     # ——————————————————————————————————————————————————————————————————— #
     # ——— Format Output ————————————————————————————————————————————————— #
