@@ -13,20 +13,25 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
   # Graphical ANSI Esc Codes
   local -r _reset=$'\e[0m'
+
+  local -r   _red=$'\e[31m'
+  local -r  _blue=$'\e[34m'
+  local -r _mgnta=$'\e[35m'
+
   local -r  _bold=$'\e[1m'
   local -r   _dim=$'\e[2m'
 
   # Formating / Visual Literals
   local -r _command_sep=' —→ '  # — em-dash   → right arrow
   local -r _keybind_sep=' =⇒ '  # = equals    ⇒ right double arrow
-  local -r _underline_char='‾'  # ‾ overline
+  local -r _underline_char='▔'  # ▔ upper 1⁄8th block  
   local -r _divider_char='─'    # ─ hor. box drawing char
 
-  local -r _dividing_line="$_dim${(pr:$COLUMNS::$_divider_char:)}$_reset"
-  
+  local -r _dividing_line="${(pr:$COLUMNS::$_divider_char:)}"
+
   # Delimiters / Arbitrary Separators
   local -ri 10 delim=$RANDOM  # just an arbitrary number
-  
+
   # Parsing & `domains` Patterns
   local -r _list_start_pattern="^Found 1 keys in domain '([^']+)'"
   local -r _list_content_pattern='^\s+"'
@@ -76,8 +81,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
     # start of key list
     if [[ "$line" =~ "${~_list_start_pattern}" ]] {
       domain_bid="${match[1]}"
-      # reset the inner lines at each iteration
-      inner_lines=
+      inner_lines=  # reset the inner lines at each iteration
       continue  # nothing else of interest on this line; continue
     }
 
@@ -111,100 +115,106 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
   # ———————————————————————————————————————————————————————————————————————— #
   # — Parse & Print Data ——————————————————————————————————————————————————— #
 
-  local -a all_lines segments
-  local -i 10 i num_segs diff column_idx    # reusing old var names ↓
-  local raw_lines header command keybind bid_underline # domain_bid line
+  local -a all_lines segments line_arr cmd_segs
+  local -i 10 line_no total_segs seg_no diff
+  local -i 10 seg_len __seg_n_max_len
+  local raw_lines command keybind bid_underline segment
 
   for domain_bid raw_lines in "${(@kv)defaults_parsed}"; {
     # ↓↓ debug line ↓↓
-    [[ "$domain_bid" != 'com.google.Chrome' ]] && continue
+    # [[ "$domain_bid" != 'com.google.Chrome' ]] && continue
 
     # ——— Create Columns ———————————————————————————————————————————————— #
 
-    # Note: the reason I'm doing this section in such a convoluted way is
-    #  to avoid having to loop over the lines multiple times
-    # Essentially:
-    #  - for each line, create an array of segments
-    #    - (segments being some text between $_command_sep)
-    #  - find out how many segments are on this line
-    #    - if the number of segments on this line > the number of segments
-    #      we already have, create new arrays for each of those new segments
-    #  - we should end up with `N` arrays named `__col_1` -> `__col_N`
-    #    - which each will store this domain's segments
-    # This is all in the aim of trying to get each segment to line up with
-    #  the others - in a table-like way
-
     # reset all looped data
+    total_segs=0
     all_lines=( "${(@f)raw_lines}" )  # split the captured lines by newline
-    num_segs=0
 
-    for line in "${(@)all_lines}"; {
-      # firstly, split each line into the command and keybinding sections
+    for line_no in {1.."${#all_lines}"}; {
+      line="${all_lines[$line_no]}"
+
       command="${line/%$_cmd_sep_pattern*}"
       keybind="${line/#*$_cmd_sep_pattern}"
 
-      # for each line, split the segments at each delimiter
       segments=( "${(ps:$delim:)command}" )
+      eval 'local -a __line_'$line_no'=( "${(@)segments}" "$keybind" )'
 
-      # then find the length of the newly-created array
-      #  and find how much it differs from how many segments we already had
-      diff=$(( $#segments - num_segs ))
+      diff=$(( $#segments - total_segs ))
 
-      # if it's smaller than the previous max size, we don't care about it
-      #  (imo this is cleaner than creating an if block for the code below)
+      # create a new max len counter for each new segment that's found
       if (( diff > 0 )) {
-        # then, for every new segment that was created, make a new array
-        #  - e.g., if num_segs=0, and diff=2, this line will run:
-        #    - local -a __col_1=() __col_2=()
-        #  - or if num_segs=2, and diff=1, it'll run:
-        #    - local -a __col_3=()
-        eval 'local -a' __col_{$(( num_segs + 1 ))..$(( num_segs + diff ))}'=()'
-
-        # finally, adjust the value of num_segs
-        #  - this is being done at the end, cos we still need to use the
-        #    old value of $num_segs in the eval line
-        num_segs=${#segments}
+        for seg_no in {$(( total_segs + 1 ))..$(( total_segs + diff ))}; {
+          eval "local -i 10 __seg_${seg_no}_max_len=0"
+        }
+        total_segs=$#segments
       }
 
-      for i in {1.."${#segments}"}; {
-        eval "__col_$i+=( '${segments[$i]}' );"
+      for seg_no in {1..$total_segs}; {
+        # unloading the max len into $__seg_n_max_len so I don't have to
+        #  do eval statements through this whole for loop
+        eval '__seg_n_max_len=$__seg_'$seg_no'_max_len'
+        seg_len=${#segments[$seg_no]}
+
+        if (( seg_len > __seg_n_max_len )) \
+          __seg_n_max_len=$seg_len
+
+        eval '__seg_'$seg_no'_max_len=$__seg_n_max_len'
       }
 
-    }
-
-    # ——— Organise Columns —————————————————————————————————————————————— #
-
-    for i in {1..$num_segs}; {
-      local -p "__col_$i"
     }
 
     # ——————————————————————————————————————————————————————————————————— #
-    # ——— Format Output ————————————————————————————————————————————————— #
+    # ——— Format Title —————————————————————————————————————————————————— #
 
     # print the separator line and domain_bid/title
     #  with an underline of the same length as the domain_bid
     # (this type of underline looks better than doing `\e[4m` imo)
     bid_underline="${(pr:$#domain_bid::$_underline_char:)}"
-    domain_bid="$_bold$domain_bid$_reset"
 
     # finally, replace all the delimiters with separator arrows
     #  (tho this will probably be changed once I make the column system)
     all_lines=( "${(@)all_lines//$delim/$_command_sep}" )
 
-    # ——————————————————————————————————————————————————————————————————— #
     # ——— Print Output —————————————————————————————————————————————————— #
 
-    echo "$_dividing_line\n$domain_bid\n$bid_underline"
+    echo -ne "$_reset$_blue$_dim"
+    echo "$_dividing_line"
 
-    for line in "${(@)all_lines}"; {
-      command="${line/%$_cmd_sep_pattern*}"
-      keybind="${line/#*$_cmd_sep_pattern}"
+    echo -ne "$_reset$_blue$_bold"
+    echo "$domain_bid"
 
-      # 45 is just an arbitrary number for now
-      #  - I need to calculate it at some point, but for now, it's big enough
-      #    that none of the commands will be truncated when printing
-      echo "${(r:52:: :)command}$_keybind_sep$keybind"
+    echo -ne "$_reset$_blue$_dim"
+    echo "$bid_underline$_reset"
+
+
+    for line_no in {1.."${#all_lines}"}; {
+      # unload the line's contents into $line_arr
+      #  - again, so I don't have to run eval multiple times
+      eval 'line_arr=( ${(@)__line_'$line_no'} )'
+      cmd_segs=( "${(@)line_arr[1,-2]}" )
+      keybind="${line_arr[-1]}"
+
+      for seg_no in {1..$total_segs}; {
+        segment="${cmd_segs[$seg_no]}"
+
+        # using old-style if/else here, cos honestly it's
+        #  just a bit cleaner & clearer in this case
+        if (( seg_no != 1 )) {
+          [[ -n "$segment" ]]         \
+            && echo -n "$_red$_command_sep$_reset"  \
+            || echo -n "${(r:$#_command_sep:: :)}"
+        }
+
+        # unload the segment's max len into $seg_len
+        #  then right-pad (left-align) each segment to that len
+        # I could do this in one line, but honestly, this looks/feels nicer
+        eval 'seg_len=$__seg_'$seg_no'_max_len'
+        echo -n "${(r:$seg_len:: :)segment}"
+      }
+
+      echo "$_mgnta$_keybind_sep$_reset$keybind"
     }
+
   }
 
   echo $_dividing_line  # a final line, just for aesthetics
@@ -212,4 +222,4 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-# spell-checker:ignoreRegExp /(?<=\['[^']+'\]=')[^']+(?=')/g
+# spell-checker:ignoreRegExp /(?<=\['[^']+'\]=')[^']+(?=')|mgnta/g
