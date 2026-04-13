@@ -177,7 +177,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
     # ——— Print Output —————————————————————————————————————————————————— #
 
-    echo -ne "$_reset$_blue$_dim"
+    echo -ne "$_dim"
     echo "$_dividing_line"
 
     echo -ne "$_reset$_blue$_bold"
@@ -217,7 +217,7 @@ if [[ $ZSH_EVAL_CONTEXT != 'toplevel' ]] return 1
 
   }
 
-  echo $_dividing_line  # a final line, just for aesthetics
+  echo $_dim$_dividing_line$_reset  # a final line, just for aesthetics
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
